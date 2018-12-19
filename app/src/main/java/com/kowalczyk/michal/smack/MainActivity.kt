@@ -1,5 +1,6 @@
 package com.kowalczyk.michal.smack
 
+import android.content.Intent
 import android.os.Bundle
 import android.support.design.widget.Snackbar
 import android.support.design.widget.NavigationView
@@ -91,7 +92,10 @@ class MainActivity : AppCompatActivity(){
     }*/
 
     fun loginBtnNavClicked(view: View){
-
+        //Intent() 1 parametr context drugi parametr gdzie to wysyłamy nazwa::class.java
+        //explicit intent
+        val loginIntent=Intent(this,LoginActivity::class.java)
+        startActivity(loginIntent)
     }
 
     fun addChannelClicked(view:View){
@@ -99,7 +103,9 @@ class MainActivity : AppCompatActivity(){
     }
 
     fun sendMsgBtnClicked(view:View){
-        
+
     }
+
+
 
 }
