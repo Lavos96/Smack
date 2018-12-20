@@ -5,6 +5,7 @@ import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
 import com.kowalczyk.michal.smack.R
+import com.kowalczyk.michal.smack.Services.AuthService
 import kotlinx.android.synthetic.main.activity_create_user.*
 
 class CreateUserActivity : AppCompatActivity() {
@@ -62,6 +63,13 @@ class CreateUserActivity : AppCompatActivity() {
     }
 
     fun createUserClicked(view:View){
+        //ostatni parametr complete ktory jest lambdą dodajemy poprzez dodanie na koncu tych nawiasow {}
+    AuthService.registerUser(this,createEmailText.toString(),createPasswordText.toString()){complete->
+        if(complete){
+
+        }
+
+    }
 
     }
 }
