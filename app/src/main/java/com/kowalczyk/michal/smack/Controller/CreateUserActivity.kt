@@ -1,11 +1,11 @@
-package com.kowalczyk.michal.smack
+package com.kowalczyk.michal.smack.Controller
 
 import android.graphics.Color
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
+import com.kowalczyk.michal.smack.R
 import kotlinx.android.synthetic.main.activity_create_user.*
-import kotlin.random.Random
 
 class CreateUserActivity : AppCompatActivity() {
 
