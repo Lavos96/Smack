@@ -3,9 +3,12 @@ package com.kowalczyk.michal.smack.Services
 import android.content.Context
 import android.util.Log
 import com.android.volley.Response
+import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
+import com.kowalczyk.michal.smack.Utilities.URL_LOGIN
 import com.kowalczyk.michal.smack.Utilities.URL_REGISTER
+import org.json.JSONException
 import org.json.JSONObject
 
 object AuthService {
@@ -13,6 +16,11 @@ object AuthService {
     //zeby robic requesty trzeba w build.gradle dodac BIBLIOTEKE VOLLEY!!!!
     //zeby robic requesty trzeba tez zezwolic apce na dostep do neta i to trzeba zrobic w Android Manifest
     //to jest w android manifest jako uses permission i podajemy tam internet
+
+    //zmienne do dzialania programu nedded
+    var isLoggedIn=false
+    var userEmail=""
+    var authToken=""
 
     //ten argument complete to Question Handler i ten question handler musi byc lambdą
     //ten argument complete bedzie nam okreslał czy rejestracja sie udala czy nie
@@ -70,5 +78,59 @@ object AuthService {
         //tworzymy obiekt volley tworzymy nowa kolejke requestow i przesylamy jej context a na koniec dodajemy naszego requesta
         Volley.newRequestQueue(context).add(registerRequest)
         //teraz to podepniemy obsluzymy pod przyciskiem do rejestracji usera
+    }
+
+    fun loginUser(context: Context,email:String,password:String,complete: (Boolean) -> Unit){
+
+        val jsonBody=JSONObject()
+        jsonBody.put("email",email)
+        jsonBody.put("password",password)
+
+        val requestBody=jsonBody.toString()
+
+        val loginRequest=object:JsonObjectRequest(Method.POST, URL_LOGIN,null,Response.Listener {response ->
+            //this is where we parse json object
+
+            //JESLI SIE UDAL REQUEST to z tego obiektu stworzonego [response] pobieramy dane typu email ten token itp
+            //isLooged ustawiamy na true oraz complete ustawiamy na true bo sie request udal
+            //metod getString rzuca wyjątki typu JSONException dlatego trzeba ja zrobic w bloku try catch
+            //w getString nazwy tych parametrow name sa brane z odpowiedzi tej metody POST i w POSTMANIE zostalo sprawdzone
+            //ze email sie tam nazywa user a token to token
+            try {
+                userEmail=response.getString("user")
+                //pobranie wartosci tokena autentykacji
+                authToken=response.getString("token")
+                isLoggedIn=true
+                complete(true)
+            }catch (e:JSONException){
+                Log.d("JSON","EXC:"+e.localizedMessage)
+                complete(false)
+            }
+        },Response.ErrorListener {error->
+            //this is where we deal with our error
+            //BLEDY STATUS CODES
+            //jesli sa 400 cos to znaczy ze zrabales cos w kodzie najpradopodobniej
+            //jesli 500 cos to blad po stronie serwa czyli z kodem API(zazwyczaj wystarczy restart)
+
+            //funkcja d.(tag_errora,wiadomosc errora)
+            Log.d("ERROR","Could not register user: $error")
+            //nadajemy funkcji lambda wartosc false bo sie request nie udal
+            complete(false)
+
+        }){
+            override fun getBodyContentType(): String {
+                return "application/json; charset=utf-8"
+            }
+
+            override fun getBody(): ByteArray {
+                return requestBody.toByteArray()
+            }
+
+        }
+
+        //jak juz stowrzylismy jedna queve (kolejke) volleya to nie tworzmy znowu nowej tylko korzystajmy juz z tej stworzonej
+        //bo inaczej mozemy doporowadzic do wyciekow pamieci
+        Volley.newRequestQueue(context).add(loginRequest)
+
     }
 }

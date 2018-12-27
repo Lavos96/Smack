@@ -64,9 +64,16 @@ class CreateUserActivity : AppCompatActivity() {
 
     fun createUserClicked(view:View){
         //ostatni parametr complete ktory jest lambdą dodajemy poprzez dodanie na koncu tych nawiasow {}
-    AuthService.registerUser(this,createEmailText.toString(),createPasswordText.toString()){complete->
-        if(complete){
-
+        val email=createEmailText.text.toString()
+        val password=createPasswordText.text.toString()
+    AuthService.registerUser(this,email,password){regiserSucces->
+        if(regiserSucces){
+            AuthService.loginUser(this,email,password){loginSucces->
+                if(loginSucces){
+                    println(AuthService.authToken)
+                    println(AuthService.userEmail)
+                }
+            }
         }
 
     }
