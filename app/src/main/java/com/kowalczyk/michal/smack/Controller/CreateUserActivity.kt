@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.view.View
 import com.kowalczyk.michal.smack.R
 import com.kowalczyk.michal.smack.Services.AuthService
+import com.kowalczyk.michal.smack.Services.UserDataService
 import kotlinx.android.synthetic.main.activity_create_user.*
 
 class CreateUserActivity : AppCompatActivity() {
@@ -64,14 +65,24 @@ class CreateUserActivity : AppCompatActivity() {
 
     fun createUserClicked(view:View){
         //ostatni parametr complete ktory jest lambdą dodajemy poprzez dodanie na koncu tych nawiasow {}
+        val userName=createUserNameText.text.toString()
         val email=createEmailText.text.toString()
         val password=createPasswordText.text.toString()
     AuthService.registerUser(this,email,password){regiserSucces->
         if(regiserSucces){
             AuthService.loginUser(this,email,password){loginSucces->
                 if(loginSucces){
-                    println(AuthService.authToken)
-                    println(AuthService.userEmail)
+                    AuthService.createUser(this,userName,email,userAvatar,avatarColor){createSucces->
+                        if(createSucces){
+                            println(UserDataService.avatarName)
+                            println(UserDataService.avatarColor)
+                            println(UserDataService.email)
+                            println(UserDataService.name)
+                            finish()
+                        }
+                    }
+
+
                 }
             }
         }

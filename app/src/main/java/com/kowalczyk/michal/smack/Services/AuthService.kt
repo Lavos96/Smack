@@ -6,6 +6,7 @@ import com.android.volley.Response
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
+import com.kowalczyk.michal.smack.Utilities.URL_CREATE_USER
 import com.kowalczyk.michal.smack.Utilities.URL_LOGIN
 import com.kowalczyk.michal.smack.Utilities.URL_REGISTER
 import org.json.JSONException
@@ -52,6 +53,7 @@ object AuthService {
         //trzeba dodac Response.Listener zeby obsluzyl jak sie uda i Response.ErrorListener zeby obsluzyl jak sie nei uda
         //wybieramy ten rodzaj listeera z metoda lambda bo tak sobie przesylamy w naszej glownej funkcji
         val registerRequest=object :StringRequest(Method.POST, URL_REGISTER,Response.Listener {response ->
+            //wszystko sie udalo i mozemy operowac na obiekcie ktory dostalismy w odpowiedzi od serwera
             //tutaj dzieja sie rzeczy ktora maja nastapic jak sie uda request
             println(response)
             //a do complete(nasza funkcja lambda) dajemy true bo się udal request
@@ -90,7 +92,7 @@ object AuthService {
 
         val loginRequest=object:JsonObjectRequest(Method.POST, URL_LOGIN,null,Response.Listener {response ->
             //this is where we parse json object
-
+            //wszystko sie udalo i mozemy operowac na obiekcie ktory dostalismy w odpowiedzi od serwera
             //JESLI SIE UDAL REQUEST to z tego obiektu stworzonego [response] pobieramy dane typu email ten token itp
             //isLooged ustawiamy na true oraz complete ustawiamy na true bo sie request udal
             //metod getString rzuca wyjątki typu JSONException dlatego trzeba ja zrobic w bloku try catch
@@ -131,6 +133,68 @@ object AuthService {
         //jak juz stowrzylismy jedna queve (kolejke) volleya to nie tworzmy znowu nowej tylko korzystajmy juz z tej stworzonej
         //bo inaczej mozemy doporowadzic do wyciekow pamieci
         Volley.newRequestQueue(context).add(loginRequest)
+    }
+
+    fun createUser(context: Context,name:String,email:String,avatarName:String,avatarColor:String,complete: (Boolean) -> Unit){
+
+        //to co jest potrzebne do ciała jsonowego ustalamy w api mozna to podejzec w postmanie
+        //kolejnosc podawania tych argumentow do ciala jest wazna i musi byc taka sama jak ustalilsmy w api
+        val jsonBody=JSONObject()
+        jsonBody.put("name",name)
+        jsonBody.put("email",email)
+        jsonBody.put("avatarName",avatarName)
+        jsonBody.put("avatarColor",avatarColor)
+        val requestBody=jsonBody.toString()
+
+        val createRequest=object :JsonObjectRequest(Method.POST, URL_CREATE_USER,null,Response.Listener {response ->
+            //wszystko sie udalo i mozemy operowac na obiekcie ktory dostalismy w odpowiedzi od serwera
+
+            //tutaj operujemy na tym obiekcie ktory dostalismy w odpowiedzi i zapisujemy sobie wartosci z niego na pozniej
+            //obiekt odpowiedzi nazywa sie response
+            try{
+
+                UserDataService.name=response.getString("name")
+                UserDataService.email=response.getString("email")
+                UserDataService.avatarName=response.getString("avatarName")
+                UserDataService.avatarColor=response.getString("avatarColor")
+                UserDataService.id=response.getString("_id")
+                complete(true)
+            }catch (e:JSONException){
+                Log.d("JSON","EXC "+e.localizedMessage)
+                complete(false)
+            }
+
+
+        },Response.ErrorListener {error->
+            //NIE UDALO SIE :<
+            //funkcja d.(tag_errora,wiadomosc errora)
+            Log.d("ERROR","Could not add user: $error")
+            //nadajemy funkcji lambda wartosc false bo sie request nie udal
+            complete(false)
+        }){
+            override fun getBodyContentType(): String {
+                return "application/json; charset=utf-8"
+            }
+
+            override fun getBody(): ByteArray {
+                return requestBody.toByteArray()
+            }
+
+            //w celu autoryzacji , zwiazane z tymi tokenami musimy przeciazyc metode getHeader
+            override fun getHeaders(): MutableMap<String, String> {
+                //tworzymy haszmape do ktorej wsadzimy pare z headera requesta a mianowice Authorization Value
+               val headers=HashMap<String,String>()
+                //to co przesylamy jest wziete z naglowka zapytania api CreateUser
+                headers.put("Authorization","Bearer $authToken")
+
+                return headers
+            }
+        }
+        Volley.newRequestQueue(context).add(createRequest)
 
     }
+
+
+
+
 }
