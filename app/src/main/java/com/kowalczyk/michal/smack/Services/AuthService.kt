@@ -1,14 +1,14 @@
 package com.kowalczyk.michal.smack.Services
 
 import android.content.Context
+import android.content.Intent
+import android.support.v4.content.LocalBroadcastManager
 import android.util.Log
 import com.android.volley.Response
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
-import com.kowalczyk.michal.smack.Utilities.URL_CREATE_USER
-import com.kowalczyk.michal.smack.Utilities.URL_LOGIN
-import com.kowalczyk.michal.smack.Utilities.URL_REGISTER
+import com.kowalczyk.michal.smack.Utilities.*
 import org.json.JSONException
 import org.json.JSONObject
 
@@ -115,7 +115,7 @@ object AuthService {
             //jesli 500 cos to blad po stronie serwa czyli z kodem API(zazwyczaj wystarczy restart)
 
             //funkcja d.(tag_errora,wiadomosc errora)
-            Log.d("ERROR","Could not register user: $error")
+            Log.d("ERROR","Could not login user: $error")
             //nadajemy funkcji lambda wartosc false bo sie request nie udal
             complete(false)
 
@@ -194,7 +194,47 @@ object AuthService {
 
     }
 
+    //To jest request typu GET nie potrzeba JSON BODY bo nic nie wysylamy na serwa tylko z niego pobieramy
+    fun findUserByEmail(context: Context,complete: (Boolean) -> Unit){
+        val findUserRequest=object:JsonObjectRequest(Method.GET,"$URL_GET_USER$userEmail",null,Response.Listener {response->
 
+            try{
+                UserDataService.name=response.getString("name")
+                UserDataService.email=response.getString("email")
+                UserDataService.avatarName=response.getString("avatarName")
+                UserDataService.avatarColor=response.getString("avatarColor")
+                UserDataService.id=response.getString("_id")
+
+                //pobrane dane wysylamy broadcastem do innych zeby poinformowac ze ktos sie zalogowal w apce
+                val userDataChange=Intent(BROADCAST_USER_DATA_CHANGE)
+                LocalBroadcastManager.getInstance(context).sendBroadcast(userDataChange)
+                complete(true)
+
+            }catch(e:JSONException){
+                Log.d("JSON","EXC: "+ e.localizedMessage)
+            }
+
+
+        },Response.ErrorListener {error ->
+            Log.d("ERROR","Could not find user")
+            complete(false)
+        }){
+            override fun getBodyContentType(): String {
+                return "application/json; charset=utf-8"
+            }
+            //w celu autoryzacji , zwiazane z tymi tokenami musimy przeciazyc metode getHeader
+            override fun getHeaders(): MutableMap<String, String> {
+                //tworzymy haszmape do ktorej wsadzimy pare z headera requesta a mianowice Authorization Value
+                val headers=HashMap<String,String>()
+                //to co przesylamy jest wziete z naglowka zapytania api CreateUser
+                headers.put("Authorization","Bearer $authToken")
+
+                return headers
+            }
+        }
+
+        Volley.newRequestQueue(context).add(findUserRequest)
+    }
 
 
 }
