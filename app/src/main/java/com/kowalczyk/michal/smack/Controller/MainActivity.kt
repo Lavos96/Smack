@@ -9,8 +9,11 @@ import android.os.Bundle
 import android.support.v4.content.LocalBroadcastManager
 import android.support.v4.view.GravityCompat
 import android.support.v7.app.ActionBarDrawerToggle
+import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
 import android.view.View
+import android.view.inputmethod.InputMethodManager
+import android.widget.EditText
 import com.kowalczyk.michal.smack.R
 import com.kowalczyk.michal.smack.Services.AuthService
 import com.kowalczyk.michal.smack.Services.UserDataService
@@ -43,6 +46,7 @@ class MainActivity : AppCompatActivity(){
         )
         drawer_layout.addDrawerListener(toggle)
         toggle.syncState()
+        hideKeyboard()
 
         //to jest odpowiedzialne za to co sie stanie jak klikniemy w jakas opcje z tego menu co sie wysuwa od lewej
         /*nav_view.setNavigationItemSelectedListener(this)*/
@@ -141,13 +145,46 @@ class MainActivity : AppCompatActivity(){
     }
 
     fun addChannelClicked(view:View){
+        if(AuthService.isLoggedIn) {
+            //nasza fabryka ktora stworzy AlertDialoga
+            val builder=AlertDialog.Builder(this)
+            //dajemy naszego layouta przez nas zrobionego
+            val dialogView=layoutInflater.inflate(R.layout.add_channel_dialog,null)
+            //nasz dialog ma miec layout taki jak podalim wczesniej
+            builder.setView(dialogView)
+                .setPositiveButton("Add"){dialog, which ->
+                    //Tutaj okreslimy co ma sie stac po nacisnieciu klawisza pozytywnego ze cos akceptujemy
 
+                    //Nie ma bezposredniego dostepu do tych pol textowych w tym layoucie co zobilismy
+                    //dlatego trezba zrobic uchwyty do trzymania pyty
+                    val nameTextField=dialogView.findViewById<EditText>(R.id.addChannelNameTxt)
+                    val descTextField=dialogView.findViewById<EditText>(R.id.addChannelDescTxt)
+                    //za pomoca uchwytow wyjmujemy z nich to co jest w nich wpisane i dajemy to do zmiennych
+                    val channelName=nameTextField.text.toString()
+
+                    val channelDesc=descTextField.text.toString()
+
+
+                    hideKeyboard()
+                }
+                .setNegativeButton("Cancel"){dialog, which ->
+                    //tu okreslimy co ma sie dziac jak klikniemy na negatywny button
+                    hideKeyboard()
+                }
+                .show()
+        }
     }
 
     fun sendMsgBtnClicked(view:View){
 
     }
 
+    fun hideKeyboard(){
+        val inputManager=getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
 
+        if(inputManager.isAcceptingText){
+            inputManager.hideSoftInputFromWindow(currentFocus.windowToken,0)
+        }
+    }
 
 }
