@@ -14,10 +14,15 @@ import android.support.v7.app.AppCompatActivity
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
+import com.kowalczyk.michal.smack.Model.Channel
 import com.kowalczyk.michal.smack.R
 import com.kowalczyk.michal.smack.Services.AuthService
+import com.kowalczyk.michal.smack.Services.MessageService
 import com.kowalczyk.michal.smack.Services.UserDataService
 import com.kowalczyk.michal.smack.Utilities.BROADCAST_USER_DATA_CHANGE
+import com.kowalczyk.michal.smack.Utilities.SOCKET_URL
+import io.socket.client.IO
+import io.socket.emitter.Emitter
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.app_bar_main.*
 import kotlinx.android.synthetic.main.nav_header_main.*
@@ -26,10 +31,15 @@ import kotlinx.android.synthetic.main.nav_header_main.*
 //to jest potrzebne(w deklaracji klasy) do zakomentowanych czesci kodu NavigationView.OnNavigationItemSelectedListener
 class MainActivity : AppCompatActivity(){
 
+    val socket= IO.socket(SOCKET_URL)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
+        socket.connect()
+        //nazwa eventu wzieta z API
+        socket.on("channelCreated",onNewChannel)
         //floating action bar
         //snackbar to jest ten przycisk na dole po prawej tozowy ze jak sie go wcisnie to wyskakuje od dolu okienko pop up z jakas
         //wiadomoscia
@@ -46,16 +56,24 @@ class MainActivity : AppCompatActivity(){
         )
         drawer_layout.addDrawerListener(toggle)
         toggle.syncState()
-        hideKeyboard()
 
         //to jest odpowiedzialne za to co sie stanie jak klikniemy w jakas opcje z tego menu co sie wysuwa od lewej
         /*nav_view.setNavigationItemSelectedListener(this)*/
 
+    }
+
+    override fun onResume() {
         //Odbiornik broadcasta
         //IntentFIlter bedzie mowil jakiego typu Intenta ma szukac/oczekiwac
         LocalBroadcastManager.getInstance(this).registerReceiver(userDataCahngeReceiver, IntentFilter(
             BROADCAST_USER_DATA_CHANGE))
+        super.onResume()
+    }
 
+    override fun onDestroy() {
+        socket.disconnect()
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(userDataCahngeReceiver)
+        super.onDestroy()
     }
 
     //BROADCAST RECEIVER
@@ -164,19 +182,43 @@ class MainActivity : AppCompatActivity(){
 
                     val channelDesc=descTextField.text.toString()
 
+                    //Teraz tworzymy chanela z nazwa i opsiem ze zmiennych
+                    //tworzymy emita(wysylamy informacje od klienta do serwera) ta nazwa newChannel jest wzieta z kodu API
+                    //emit polega na wysylaniu info a socket.on na odbieraniu (nie wazne po ktorej stronie)
+                    //czyli emity i ony sa wykorzystywane do komunikacji w socketach webowych
+                    socket.emit("newChannel",channelName,channelDesc)
 
-                    hideKeyboard()
                 }
                 .setNegativeButton("Cancel"){dialog, which ->
                     //tu okreslimy co ma sie dziac jak klikniemy na negatywny button
-                    hideKeyboard()
+
                 }
                 .show()
         }
     }
 
-    fun sendMsgBtnClicked(view:View){
+    private val onNewChannel=Emitter.Listener {args ->
+        //trzeba rzutowac elementy tej tablicy args poniewaz sa one typu ogolnego jak object w c#
+        //println(args[0] as String)
+        //Uruchamiamy watek w tle
+        //zeby apka nie mulila niech ciezkie polaczenia z baza i obliczenia dzieja sie w tle zeby nie zamrozić apki
+        runOnUiThread {
+            //tworzymy zmienne z atrybutami dla nowego kanalu
+           val channelName=args[0] as String
+            val channelDescription=args[1] as String
+            val channelId=args[2] as String
+            //tworzymy nowy kanal
+            val newChannel=Channel(channelName,channelDescription,channelId)
+            //wysylamy go do tablicy kanalow w messageService
+            MessageService.channels.add(newChannel)
+            println(newChannel.name)
+            println(newChannel.description)
+            println(newChannel.id)
+        }
+    }
 
+    fun sendMsgBtnClicked(view:View){
+        hideKeyboard()
     }
 
     fun hideKeyboard(){
