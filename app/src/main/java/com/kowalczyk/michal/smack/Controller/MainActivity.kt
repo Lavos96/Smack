@@ -26,6 +26,7 @@ import io.socket.client.IO
 import io.socket.emitter.Emitter
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.app_bar_main.*
+import kotlinx.android.synthetic.main.content_main.*
 import kotlinx.android.synthetic.main.nav_header_main.*
 
 
@@ -35,6 +36,7 @@ class MainActivity : AppCompatActivity(){
     val socket= IO.socket(SOCKET_URL)
     //adapter dla list view zwiazanego z channelami
     lateinit var channelAdapter:ArrayAdapter<Channel>
+    var selectedChannel:Channel?=null
 
     //adapter dla list view zwiazanego z channelami
     private fun setupAdapters(){
@@ -66,6 +68,12 @@ class MainActivity : AppCompatActivity(){
         drawer_layout.addDrawerListener(toggle)
         toggle.syncState()
         setupAdapters()
+
+        channel_list.setOnItemClickListener { _, _, position, _ ->
+            selectedChannel=MessageService.channels[position]
+            drawer_layout.closeDrawer(GravityCompat.START)
+            updateWithChannel()
+        }
 
         if(App.prefs.isLoggedIn){
             AuthService.findUserByEmail(this){}
@@ -104,14 +112,24 @@ class MainActivity : AppCompatActivity(){
                 userImageNavHeader.setBackgroundColor(UserDataService.returnAvatarColor(UserDataService.avatarColor))
                 loginBtnNavHeader.text="Logout"
 
-                MessageService.getChannels(context){complete->
+                MessageService.getChannels{complete->
                     if(complete){
-                        //przeładowanie danych bo na poczatku sa puste
-                        channelAdapter.notifyDataSetChanged()
+                        if(MessageService.channels.count()>0){
+                            selectedChannel=MessageService.channels[0]
+                            //przeładowanie danych bo na poczatku sa puste
+                            channelAdapter.notifyDataSetChanged()
+                            updateWithChannel()
+                        }
+
                     }
                 }
             }
         }
+    }
+
+    fun updateWithChannel(){
+        mainChannelName.text="#${selectedChannel?.name}"
+        //download messages for channel
     }
 
     override fun onBackPressed() {
@@ -191,7 +209,7 @@ class MainActivity : AppCompatActivity(){
             val dialogView=layoutInflater.inflate(R.layout.add_channel_dialog,null)
             //nasz dialog ma miec layout taki jak podalim wczesniej
             builder.setView(dialogView)
-                .setPositiveButton("Add"){dialog, which ->
+                .setPositiveButton("Add"){_, _ ->
                     //Tutaj okreslimy co ma sie stac po nacisnieciu klawisza pozytywnego ze cos akceptujemy
 
                     //Nie ma bezposredniego dostepu do tych pol textowych w tym layoucie co zobilismy
@@ -210,7 +228,7 @@ class MainActivity : AppCompatActivity(){
                     socket.emit("newChannel",channelName,channelDesc)
 
                 }
-                .setNegativeButton("Cancel"){dialog, which ->
+                .setNegativeButton("Cancel"){_, _ ->
                     //tu okreslimy co ma sie dziac jak klikniemy na negatywny button
 
                 }

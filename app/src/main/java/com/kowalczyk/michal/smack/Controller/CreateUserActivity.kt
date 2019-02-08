@@ -77,11 +77,11 @@ class CreateUserActivity : AppCompatActivity() {
 
         if(userName.isNotEmpty() && email.isNotEmpty() && password.isNotEmpty()){
 
-            AuthService.registerUser(this,email,password){regiserSucces->
+            AuthService.registerUser(email,password){regiserSucces->
                 if(regiserSucces){
-                    AuthService.loginUser(this,email,password){loginSucces->
+                    AuthService.loginUser(email,password){loginSucces->
                         if(loginSucces){
-                            AuthService.createUser(this,userName,email,userAvatar,avatarColor){createSucces->
+                            AuthService.createUser(userName,email,userAvatar,avatarColor){createSucces->
                                 if(createSucces){
                                     //ustawiamy broadcasta ktory zacznie rozsylac sygnal (intent) i te activity ktore sa ustawiaone na nasluchiwanie
                                     //sie odezwa i odbiorą tego intenta [dziala to tak jak stacja radiowa ktory rozsyla sygnal i jesli radio jest ustawione na

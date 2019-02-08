@@ -26,7 +26,7 @@ object AuthService {
 
     //ten argument complete to Question Handler i ten question handler musi byc lambdą
     //ten argument complete bedzie nam okreslał czy rejestracja sie udala czy nie
-    fun registerUser(context: Context, email:String,password:String,complete:(Boolean)->Unit){
+    fun registerUser(email:String,password:String,complete:(Boolean)->Unit){
 
         //JSON BODY bo ten request jest typu POST i chcemy w jego body cos przeslac na serwer(dane rejestracji)
         //a wiec musimy utworzyc JSON BODY
@@ -83,7 +83,7 @@ object AuthService {
         //teraz to podepniemy obsluzymy pod przyciskiem do rejestracji usera
     }
 
-    fun loginUser(context: Context,email:String,password:String,complete: (Boolean) -> Unit){
+    fun loginUser(email:String,password:String,complete: (Boolean) -> Unit){
 
         val jsonBody=JSONObject()
         jsonBody.put("email",email)
@@ -136,7 +136,7 @@ object AuthService {
         App.prefs.requestQueue.add(loginRequest)
     }
 
-    fun createUser(context: Context,name:String,email:String,avatarName:String,avatarColor:String,complete: (Boolean) -> Unit){
+    fun createUser(name:String,email:String,avatarName:String,avatarColor:String,complete: (Boolean) -> Unit){
 
         //to co jest potrzebne do ciała jsonowego ustalamy w api mozna to podejzec w postmanie
         //kolejnosc podawania tych argumentow do ciala jest wazna i musi byc taka sama jak ustalilsmy w api
