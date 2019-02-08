@@ -67,6 +67,10 @@ class MainActivity : AppCompatActivity(){
         toggle.syncState()
         setupAdapters()
 
+        if(App.prefs.isLoggedIn){
+            AuthService.findUserByEmail(this){}
+        }
+
         //to jest odpowiedzialne za to co sie stanie jak klikniemy w jakas opcje z tego menu co sie wysuwa od lewej
         /*nav_view.setNavigationItemSelectedListener(this)*/
 
@@ -91,7 +95,7 @@ class MainActivity : AppCompatActivity(){
         override fun onReceive(context: Context, intent: Intent?) {
             //co sie ma zadziac jak sygnal zostanie odebrany
             //AuthService to singleton ktorego stworzylismy a isLoggedIn jest jego czescia
-            if(AuthService.isLoggedIn){
+            if(App.prefs.isLoggedIn){
                 //jesli jest zalogowany uzytkownik to podmieniamy jego logo nazwe itp
                 userNameNavHeader.text=UserDataService.name
                 userEmailNavHeader.text=UserDataService.email
@@ -165,7 +169,7 @@ class MainActivity : AppCompatActivity(){
         //Intent() 1 parametr context drugi parametr gdzie to wysyłamy nazwa::class.java
         //explicit intent
 
-        if(AuthService.isLoggedIn){
+        if(App.prefs.isLoggedIn){
             //logout
             UserDataService.logout()
             userNameNavHeader.text=""
@@ -180,7 +184,7 @@ class MainActivity : AppCompatActivity(){
     }
 
     fun addChannelClicked(view:View){
-        if(AuthService.isLoggedIn) {
+        if(App.prefs.isLoggedIn) {
             //nasza fabryka ktora stworzy AlertDialoga
             val builder=AlertDialog.Builder(this)
             //dajemy naszego layouta przez nas zrobionego

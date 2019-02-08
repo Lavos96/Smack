@@ -8,6 +8,7 @@ import com.android.volley.Response
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
+import com.kowalczyk.michal.smack.Controller.App
 import com.kowalczyk.michal.smack.Utilities.*
 import org.json.JSONException
 import org.json.JSONObject
@@ -19,9 +20,9 @@ object AuthService {
     //to jest w android manifest jako uses permission i podajemy tam internet
 
     //zmienne do dzialania programu nedded
-    var isLoggedIn=false
-    var userEmail=""
-    var authToken=""
+    //var isLoggedIn=false
+   // var userEmail=""
+    //var authToken=""
 
     //ten argument complete to Question Handler i ten question handler musi byc lambdą
     //ten argument complete bedzie nam okreslał czy rejestracja sie udala czy nie
@@ -78,7 +79,7 @@ object AuthService {
 
         //teraz dodajemy to do kolejki Volleya zeby to wyslal
         //tworzymy obiekt volley tworzymy nowa kolejke requestow i przesylamy jej context a na koniec dodajemy naszego requesta
-        Volley.newRequestQueue(context).add(registerRequest)
+        App.prefs.requestQueue.add(registerRequest)
         //teraz to podepniemy obsluzymy pod przyciskiem do rejestracji usera
     }
 
@@ -99,10 +100,10 @@ object AuthService {
             //w getString nazwy tych parametrow name sa brane z odpowiedzi tej metody POST i w POSTMANIE zostalo sprawdzone
             //ze email sie tam nazywa user a token to token
             try {
-                userEmail=response.getString("user")
+                App.prefs.userEmail=response.getString("user")
                 //pobranie wartosci tokena autentykacji
-                authToken=response.getString("token")
-                isLoggedIn=true
+                App.prefs.authToken=response.getString("token")
+                App.prefs.isLoggedIn=true
                 complete(true)
             }catch (e:JSONException){
                 Log.d("JSON","EXC:"+e.localizedMessage)
@@ -132,7 +133,7 @@ object AuthService {
 
         //jak juz stowrzylismy jedna queve (kolejke) volleya to nie tworzmy znowu nowej tylko korzystajmy juz z tej stworzonej
         //bo inaczej mozemy doporowadzic do wyciekow pamieci
-        Volley.newRequestQueue(context).add(loginRequest)
+        App.prefs.requestQueue.add(loginRequest)
     }
 
     fun createUser(context: Context,name:String,email:String,avatarName:String,avatarColor:String,complete: (Boolean) -> Unit){
@@ -185,18 +186,18 @@ object AuthService {
                 //tworzymy haszmape do ktorej wsadzimy pare z headera requesta a mianowice Authorization Value
                val headers=HashMap<String,String>()
                 //to co przesylamy jest wziete z naglowka zapytania api CreateUser
-                headers.put("Authorization","Bearer $authToken")
+                headers.put("Authorization","Bearer ${App.prefs.authToken}")
 
                 return headers
             }
         }
-        Volley.newRequestQueue(context).add(createRequest)
+        App.prefs.requestQueue.add(createRequest)
 
     }
 
     //To jest request typu GET nie potrzeba JSON BODY bo nic nie wysylamy na serwa tylko z niego pobieramy
     fun findUserByEmail(context: Context,complete: (Boolean) -> Unit){
-        val findUserRequest=object:JsonObjectRequest(Method.GET,"$URL_GET_USER$userEmail",null,Response.Listener {response->
+        val findUserRequest=object:JsonObjectRequest(Method.GET,"$URL_GET_USER${App.prefs.userEmail}",null,Response.Listener {response->
 
             try{
                 UserDataService.name=response.getString("name")
@@ -227,13 +228,13 @@ object AuthService {
                 //tworzymy haszmape do ktorej wsadzimy pare z headera requesta a mianowice Authorization Value
                 val headers=HashMap<String,String>()
                 //to co przesylamy jest wziete z naglowka zapytania api CreateUser
-                headers.put("Authorization","Bearer $authToken")
+                headers.put("Authorization","Bearer ${App.prefs.authToken}")
 
                 return headers
             }
         }
 
-        Volley.newRequestQueue(context).add(findUserRequest)
+        App.prefs.requestQueue.add(findUserRequest)
     }
 
 
