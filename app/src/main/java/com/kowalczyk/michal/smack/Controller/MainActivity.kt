@@ -16,6 +16,7 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.ArrayAdapter
 import android.widget.EditText
 import com.kowalczyk.michal.smack.Model.Channel
+import com.kowalczyk.michal.smack.Model.Message
 import com.kowalczyk.michal.smack.R
 import com.kowalczyk.michal.smack.Services.AuthService
 import com.kowalczyk.michal.smack.Services.MessageService
@@ -51,6 +52,7 @@ class MainActivity : AppCompatActivity(){
         socket.connect()
         //nazwa eventu wzieta z API
         socket.on("channelCreated",onNewChannel)
+        socket.on("messageCreated",onNewMessage)
         //floating action bar
         //snackbar to jest ten przycisk na dole po prawej tozowy ze jak sie go wcisnie to wyskakuje od dolu okienko pop up z jakas
         //wiadomoscia
@@ -130,6 +132,15 @@ class MainActivity : AppCompatActivity(){
     fun updateWithChannel(){
         mainChannelName.text="#${selectedChannel?.name}"
         //download messages for channel
+        if(selectedChannel!=null){
+            MessageService.getMessages(selectedChannel!!.id){complete->
+                if(complete){
+                    for(message in MessageService.messages){
+                        println(message.message)
+                    }
+                }
+            }
+        }
     }
 
     override fun onBackPressed() {
@@ -241,24 +252,54 @@ class MainActivity : AppCompatActivity(){
         //println(args[0] as String)
         //Uruchamiamy watek w tle
         //zeby apka nie mulila niech ciezkie polaczenia z baza i obliczenia dzieja sie w tle zeby nie zamrozić apki
-        runOnUiThread {
-            //tworzymy zmienne z atrybutami dla nowego kanalu
-           val channelName=args[0] as String
-            val channelDescription=args[1] as String
-            val channelId=args[2] as String
-            //tworzymy nowy kanal
-            val newChannel=Channel(channelName,channelDescription,channelId)
-            //wysylamy go do tablicy kanalow w messageService
-            MessageService.channels.add(newChannel)
-            //println(newChannel.name)
-            //println(newChannel.description)
-            //println(newChannel.id)
-            channelAdapter.notifyDataSetChanged()
+        if(App.prefs.isLoggedIn) {
+            runOnUiThread {
+                //tworzymy zmienne z atrybutami dla nowego kanalu
+                val channelName = args[0] as String
+                val channelDescription = args[1] as String
+                val channelId = args[2] as String
+                //tworzymy nowy kanal
+                val newChannel = Channel(channelName, channelDescription, channelId)
+                //wysylamy go do tablicy kanalow w messageService
+                MessageService.channels.add(newChannel)
+                //println(newChannel.name)
+                //println(newChannel.description)
+                //println(newChannel.id)
+                channelAdapter.notifyDataSetChanged()
+            }
+        }
+    }
+
+    private val onNewMessage=Emitter.Listener {args ->
+        if(App.prefs.isLoggedIn) {
+            runOnUiThread {
+                val channelId = args[2] as String
+                if(channelId==selectedChannel?.id) {
+                    val msgBody = args[0] as String
+                    val userName = args[3] as String
+                    val userAvatar = args[4] as String
+                    val userAvatarColor = args[5] as String
+                    val id = args[6] as String
+                    val timeStamp = args[7] as String
+
+                    val newMessage = Message(msgBody, userName, channelId, userAvatar, userAvatarColor, id, timeStamp)
+                    MessageService.messages.add(newMessage)
+                }
+            }
         }
     }
 
     fun sendMsgBtnClicked(view:View){
-        hideKeyboard()
+        if(App.prefs.isLoggedIn && messageTextField.text.isNotEmpty() && selectedChannel!=null){
+            val userId=UserDataService.id
+            val channelId=selectedChannel!!.id
+            //kolejnosc podawania argumentoww musi byc zgodna z kodem api
+            //nazwa eventu wzieta z kodu API
+            socket.emit("newMessage",messageTextField.text.toString(),userId,channelId,
+                UserDataService.name,UserDataService.avatarName,UserDataService.avatarColor)
+            messageTextField.text.clear()
+            hideKeyboard()
+        }
     }
 
     fun hideKeyboard(){
